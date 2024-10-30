@@ -12,4 +12,6 @@ COPY --from=mwader/static-ffmpeg:6.1 /ffprobe /bin/ffprobe
 COPY . .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+EXPOSE 8000
+
 CMD ["bash","run.sh"]

@@ -1,4 +1,6 @@
 from os import path as ospath, mkdir, system, getenv
+import asyncio
+from aiohttp import web
 from logging import INFO, ERROR, FileHandler, StreamHandler, basicConfig, getLogger
 from traceback import format_exc
 from asyncio import Queue, Lock
@@ -8,6 +10,7 @@ from pyrogram import Client
 from pyrogram.enums import ParseMode
 from dotenv import load_dotenv
 from uvloop import install
+
 
 install()
 basicConfig(format="[%(asctime)s] [%(name)s | %(levelname)s] - %(message)s [%(filename)s:%(lineno)d]",
@@ -31,6 +34,24 @@ ffLock = Lock()
 ffQueue = Queue()
 ff_queued = dict()
 
+## web
+async def web_server():
+    # Sample async web server setup
+    async def handle(request):
+        return web.Response(text="Web server is running!")
+
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    return app
+
+async def start_web_server():
+    # Start the web server on port 8000
+    app = await web_server()
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8000)
+    await site.start()
+
 class Var:
     API_ID, API_HASH, BOT_TOKEN = getenv("API_ID"), getenv("API_HASH"), getenv("BOT_TOKEN")
     MONGO_URI = getenv("MONGO_URI")
@@ -48,7 +69,7 @@ class Var:
     ADMINS = list(map(int, getenv("ADMINS", "1242011540").split()))
     
     SEND_SCHEDULE = getenv("SEND_SCHEDULE", "False").lower() == "true"
-    BRAND_UNAME = getenv("BRAND_UNAME", "@username")
+    BRAND_UNAME = getenv("BRAND_UNAME", "@AnimePlaza_STR")
     FFCODE_1080 = getenv("FFCODE_1080") or """ffmpeg -i '{}' -progress '{}' -preset veryfast -c:v libx264 -s 1920x1080 -pix_fmt yuv420p -crf 30 -c:a libopus -b:a 32k -c:s copy -map 0 -ac 2 -ab 32k -vbr 2 -level 3.1 '{}' -y"""
     FFCODE_720 = getenv("FFCODE_720") or """ffmpeg -i '{}' -progress '{}' -preset superfast -c:v libx264 -s 1280x720 -pix_fmt yuv420p -crf 30 -c:a libopus -b:a 32k -c:s copy -map 0 -ac 2 -ab 32k -vbr 2 -level 3.1 '{}' -y"""
     FFCODE_480 = getenv("FFCODE_480") or """ffmpeg -i '{}' -progress '{}' -preset superfast -c:v libx264 -s 854x480 -pix_fmt yuv420p -crf 30 -c:a libopus -b:a 32k -c:s copy -map 0 -ac 2 -ab 32k -vbr 2 -level 3.1 '{}' -y"""
@@ -76,6 +97,9 @@ if not ospath.isdir("downloads/"):
 try:
     bot = Client(name="AutoAniAdvance", api_id=Var.API_ID, api_hash=Var.API_HASH, bot_token=Var.BOT_TOKEN, plugins=dict(root="bot/modules"), parse_mode=ParseMode.HTML)
     bot_loop = bot.loop
+# Start the web server asynchronously
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_web_server())
     sch = AsyncIOScheduler(timezone="Asia/Kolkata", event_loop=bot_loop)
 except Exception as ee:
     LOGS.error(str(ee))
